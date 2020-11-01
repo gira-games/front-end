@@ -9,11 +9,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gira-games/client/pkg/client"
+
 	"github.com/asankov/gira/cmd/front-end/server"
 	"github.com/asankov/gira/internal/fixtures"
 	"github.com/asankov/gira/internal/fixtures/assert"
-	"github.com/asankov/gira/pkg/client"
-	"github.com/asankov/gira/pkg/models"
 	"github.com/golangcollege/sessions"
 	"github.com/sirupsen/logrus"
 
@@ -22,12 +22,12 @@ import (
 
 var (
 	token = "my-test-token"
-	games = []*models.Game{game}
-	game  = &models.Game{
+	games = []*client.Game{game}
+	game  = &client.Game{
 		ID:   "1",
 		Name: "Game1",
 	}
-	user = &models.User{
+	user = &client.User{
 		ID:       "1",
 		Username: "test-user",
 	}
@@ -81,8 +81,14 @@ func TestHandleHomeLoggedInUser(t *testing.T) {
 	})
 
 	apiClient.EXPECT().
-		GetUser(gomock.Eq(token)).
-		Return(user, nil)
+		GetUser(&client.GetUserRequest{
+			Token: token,
+		}).
+		Return(&client.GetUserResponse{
+			ID:       user.ID,
+			Username: user.Username,
+			Email:    user.Email,
+		}, nil)
 	renderer.EXPECT().
 		Render(gomock.Any(), gomock.Any(), gomock.Eq(server.TemplateData{
 			User: user,
@@ -117,17 +123,17 @@ func TestHandleHomeRendererError(t *testing.T) {
 func TestHandleCreateView(t *testing.T) {
 	testCases := []struct {
 		Name            string
-		Franchises      []*models.Franchise
+		Franchises      []*client.Franchise
 		FranchisesError error
 	}{
 		{
 			Name:            "GetFranchises returns empty array of franchises and no error",
-			Franchises:      []*models.Franchise{},
+			Franchises:      []*client.Franchise{},
 			FranchisesError: nil,
 		},
 		{
 			Name: "GetFranchises returns array of franchises and no error",
-			Franchises: []*models.Franchise{
+			Franchises: []*client.Franchise{
 				{
 					ID:   "1",
 					Name: "Batman",
@@ -158,8 +164,16 @@ func TestHandleCreateView(t *testing.T) {
 				Value: token,
 			})
 
-			apiClientMock.EXPECT().GetUser(gomock.Eq(token)).Return(user, nil)
-			apiClientMock.EXPECT().GetFranchises(gomock.Eq(token)).Return(testCase.Franchises, testCase.FranchisesError)
+			apiClientMock.EXPECT().
+				GetUser(&client.GetUserRequest{Token: token}).
+				Return(&client.GetUserResponse{
+					ID:       user.ID,
+					Username: user.Username,
+					Email:    user.Email,
+				}, nil)
+			apiClientMock.EXPECT().
+				GetFranchises(&client.GetFranchisesRequest{Token: token}).
+				Return(&client.GetFranchisesResponse{Franchises: testCase.Franchises}, testCase.FranchisesError)
 
 			rendererMock.EXPECT().
 				Render(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).
@@ -181,11 +195,15 @@ func TestGamesAdd(t *testing.T) {
 			name: "User is fetched succesfully from the API",
 			setup: func(a *fixtures.APIClientMock, r *fixtures.RendererMock) {
 				a.EXPECT().
-					GetGames(gomock.Eq(token), gomock.Any()).
-					Return(games, nil)
+					GetGames(&client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
+					Return(&client.GetGamesResponse{Games: games}, nil)
 				a.EXPECT().
-					GetUser(gomock.Eq(token)).
-					Return(user, nil)
+					GetUser(&client.GetUserRequest{Token: token}).
+					Return(&client.GetUserResponse{
+						ID:       user.ID,
+						Username: user.Username,
+						Email:    user.Email,
+					}, nil)
 				r.EXPECT().
 					Render(gomock.Any(), gomock.Any(), gomock.Eq(server.TemplateData{Games: games, User: user}), gomock.Any()).
 					Return(nil)
@@ -195,10 +213,10 @@ func TestGamesAdd(t *testing.T) {
 			name: "User is not fetched succesfully from the API",
 			setup: func(a *fixtures.APIClientMock, r *fixtures.RendererMock) {
 				a.EXPECT().
-					GetGames(gomock.Eq(token), gomock.Any()).
-					Return(games, nil)
+					GetGames(&client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
+					Return(&client.GetGamesResponse{Games: games}, nil)
 				a.EXPECT().
-					GetUser(gomock.Eq(token)).
+					GetUser(&client.GetUserRequest{Token: token}).
 					Return(nil, errors.New("error while fetching user"))
 				r.EXPECT().
 					Render(gomock.Any(), gomock.Any(), gomock.Eq(server.TemplateData{Games: games}), gomock.Any()).
@@ -243,7 +261,7 @@ func TestGamesAddClientError(t *testing.T) {
 			name: "NoAuthorization Error",
 			setup: func(a *fixtures.APIClientMock) {
 				a.EXPECT().
-					GetGames(gomock.Eq(token), gomock.Any()).
+					GetGames(&client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
 					Return(nil, client.ErrNoAuthorization)
 			},
 
@@ -256,7 +274,7 @@ func TestGamesAddClientError(t *testing.T) {
 			name: "Other error",
 			setup: func(a *fixtures.APIClientMock) {
 				a.EXPECT().
-					GetGames(gomock.Eq(token), gomock.Any()).
+					GetGames(gomock.Eq(&client.GetGamesRequest{Token: token, ExcludeAssigned: true})).
 					Return(nil, errors.New("some other error"))
 			},
 			expectedCode:      http.StatusInternalServerError,
@@ -298,8 +316,11 @@ func TestGamesAddPost(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LinkGameToUser(gomock.Eq(game.ID), token).
-		Return(nil, nil)
+		LinkGameToUser(&client.LinkGameToUserRequest{
+			Token:  token,
+			GameID: game.ID,
+		}).
+		Return(nil)
 
 	w := httptest.NewRecorder()
 
@@ -345,8 +366,11 @@ func TestGamesAddPostClientError(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LinkGameToUser(gomock.Eq(game.ID), token).
-		Return(nil, errors.New("error while linking game"))
+		LinkGameToUser(&client.LinkGameToUserRequest{
+			Token:  token,
+			GameID: game.ID,
+		}).
+		Return(errors.New("error while linking game"))
 
 	w := httptest.NewRecorder()
 
@@ -372,14 +396,20 @@ func TestGamesChangeStatus(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		ChangeGameStatus(gomock.Eq(game.ID), gomock.Eq(token), gomock.Eq(models.StatusInProgress)).
+		UpdateGameProgress(&client.UpdateGameProgressRequest{
+			GameID: game.ID,
+			Token:  token,
+			Update: client.UpdateGameProgressChange{
+				Status: client.Status("In Progress"),
+			},
+		}).
 		Return(nil)
 
 	w := httptest.NewRecorder()
 
 	form := url.Values{}
 	form.Add("game", game.ID)
-	form.Add("status", string(models.StatusInProgress))
+	form.Add("status", "In Progress")
 	r := httptest.NewRequest(http.MethodPost, "/games/status", strings.NewReader(form.Encode()))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	r.AddCookie(&http.Cookie{
@@ -400,14 +430,20 @@ func TestGamesChangeStatusServiceError(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		ChangeGameStatus(gomock.Eq(game.ID), gomock.Eq(token), gomock.Eq(models.StatusInProgress)).
+		UpdateGameProgress(&client.UpdateGameProgressRequest{
+			GameID: game.ID,
+			Token:  token,
+			Update: client.UpdateGameProgressChange{
+				Status: client.Status("In Progress"),
+			},
+		}).
 		Return(errors.New("error while changing status"))
 
 	w := httptest.NewRecorder()
 
 	form := url.Values{}
 	form.Add("game", game.ID)
-	form.Add("status", string(models.StatusInProgress))
+	form.Add("status", "In Progress")
 	r := httptest.NewRequest(http.MethodPost, "/games/status", strings.NewReader(form.Encode()))
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	r.AddCookie(&http.Cookie{
@@ -428,7 +464,7 @@ func TestGamesChangeStatusPostError(t *testing.T) {
 			name: "Empty game",
 			request: func() *http.Request {
 				form := url.Values{
-					"status": []string{string(models.StatusTODO)},
+					"status": []string{"TODO"},
 				}
 				body := strings.NewReader(form.Encode())
 				r := httptest.NewRequest(http.MethodPost, "/games/status", body)
@@ -489,10 +525,16 @@ func TestGamesChangeProgress(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		ChangeGameProgress(gomock.Eq(game.ID), gomock.Eq(token), gomock.Eq(&models.UserGameProgress{
-			Current: 10,
-			Final:   100,
-		})).
+		UpdateGameProgress(&client.UpdateGameProgressRequest{
+			GameID: game.ID,
+			Token:  token,
+			Update: client.UpdateGameProgressChange{
+				Progress: &client.UserGameProgress{
+					Current: 10,
+					Final:   100,
+				},
+			},
+		}).
 		Return(nil)
 
 	w := httptest.NewRecorder()
@@ -584,8 +626,15 @@ func TestGamesCreate(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateGame(gomock.Eq(&models.Game{Name: game.Name}), gomock.Eq(token)).
-		Return(game, nil)
+		CreateGame(&client.CreateGameRequest{
+			Token: token,
+			Game: &client.Game{
+				Name: game.Name,
+			},
+		}).
+		Return(&client.CreateGameResponse{
+			Game: game,
+		}, nil)
 
 	w := httptest.NewRecorder()
 
@@ -657,7 +706,7 @@ func TestGamesCreateServiceError(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateGame(gomock.Eq(&models.Game{Name: game.Name}), gomock.Eq(token)).
+		CreateGame(&client.CreateGameRequest{Game: &client.Game{Name: game.Name}, Token: token}).
 		Return(nil, errors.New("error while creating game"))
 
 	w := httptest.NewRecorder()
@@ -684,26 +733,32 @@ func TestGamesGet(t *testing.T) {
 	srv := newServer(apiClientMock, rendererMock)
 
 	apiClientMock.EXPECT().
-		GetUser(gomock.Eq(token)).
-		Return(user, nil)
+		GetUser(&client.GetUserRequest{Token: token}).
+		Return(&client.GetUserResponse{
+			ID:       user.ID,
+			Username: user.Username,
+			Email:    user.Email,
+		}, nil)
 	apiClientMock.EXPECT().
-		GetUserGames(gomock.Eq(token)).
-		Return(map[models.Status][]*models.UserGame{
-			models.StatusDone: {
-				&models.UserGame{
-					ID: "1",
-					Game: &models.Game{
-						ID:   "1",
-						Name: "1",
+		GetUserGames(&client.GetUserGamesRequest{Token: token}).
+		Return(&client.GetUserGamesResponse{
+			UserGames: map[client.Status][]*client.UserGame{
+				"Done": {
+					&client.UserGame{
+						ID: "1",
+						Game: &client.Game{
+							ID:   "1",
+							Name: "1",
+						},
 					},
 				},
-			},
-			models.StatusTODO: {
-				&models.UserGame{
-					ID: "2",
-					Game: &models.Game{
-						ID:   "2",
-						Name: "2",
+				"TODO": {
+					&client.UserGame{
+						ID: "2",
+						Game: &client.Game{
+							ID:   "2",
+							Name: "2",
+						},
 					},
 				},
 			},
@@ -736,7 +791,9 @@ func TestGamesGetClientError(t *testing.T) {
 		{
 			name: "Auth error",
 			setup: func(a *fixtures.APIClientMock) {
-				a.EXPECT().GetUserGames(gomock.Eq(token)).Return(nil, client.ErrNoAuthorization)
+				a.EXPECT().
+					GetUserGames(&client.GetUserGamesRequest{Token: token}).
+					Return(nil, client.ErrNoAuthorization)
 			},
 
 			assert: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -746,7 +803,9 @@ func TestGamesGetClientError(t *testing.T) {
 		{
 			name: "Other error",
 			setup: func(a *fixtures.APIClientMock) {
-				a.EXPECT().GetUserGames(gomock.Eq(token)).Return(nil, errors.New("unknown error"))
+				a.EXPECT().
+					GetUserGames(&client.GetUserGamesRequest{Token: token}).
+					Return(nil, errors.New("unknown error"))
 			},
 			assert: func(t *testing.T, w *httptest.ResponseRecorder) {
 				assert.StatusCode(t, w, http.StatusInternalServerError)
@@ -790,7 +849,10 @@ func TestGamesDelete(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		DeleteUserGame(gomock.Eq(game.ID), gomock.Eq(token)).
+		DeleteUserGame(&client.DeleteUserGameRequest{
+			GameID: game.ID,
+			Token:  token,
+		}).
 		Return(nil)
 
 	w := httptest.NewRecorder()
@@ -817,7 +879,12 @@ func TestGamesDeleteClientError(t *testing.T) {
 		{
 			name: "Auth error",
 			setup: func(a *fixtures.APIClientMock) {
-				a.EXPECT().DeleteUserGame(gomock.Eq(game.ID), gomock.Eq(token)).Return(client.ErrNoAuthorization)
+				a.EXPECT().
+					DeleteUserGame(&client.DeleteUserGameRequest{
+						GameID: game.ID,
+						Token:  token,
+					}).
+					Return(client.ErrNoAuthorization)
 			},
 
 			assert: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -827,7 +894,12 @@ func TestGamesDeleteClientError(t *testing.T) {
 		{
 			name: "Other error",
 			setup: func(a *fixtures.APIClientMock) {
-				a.EXPECT().DeleteUserGame(gomock.Eq(game.ID), gomock.Eq(token)).Return(errors.New("unknown error"))
+				a.EXPECT().
+					DeleteUserGame(&client.DeleteUserGameRequest{
+						GameID: game.ID,
+						Token:  token,
+					}).
+					Return(errors.New("unknown error"))
 
 			},
 			assert: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -872,7 +944,7 @@ func TestGamesDeletePostError(t *testing.T) {
 			name: "Empty game",
 			request: func() *http.Request {
 				form := url.Values{
-					"status": []string{string(models.StatusTODO)},
+					"status": []string{"TODO"},
 				}
 				body := strings.NewReader(form.Encode())
 				r := httptest.NewRequest(http.MethodPost, "/games/delete", body)

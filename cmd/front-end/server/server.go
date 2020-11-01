@@ -3,8 +3,8 @@ package server
 import (
 	"net/http"
 
-	"github.com/asankov/gira/pkg/client"
-	"github.com/asankov/gira/pkg/models"
+	"github.com/gira-games/client/pkg/client"
+
 	"github.com/golangcollege/sessions"
 	"github.com/sirupsen/logrus"
 )
@@ -22,12 +22,12 @@ var (
 
 // TemplateData is the struct that holds all the data that can be passed to the template renderer to render
 type TemplateData struct {
-	Game       *models.Game
-	User       *models.User
-	Games      []*models.Game
-	UserGames  []*models.UserGame
-	Statuses   []models.Status
-	Franchises []*models.Franchise
+	Game       *client.Game
+	User       *client.User
+	Games      []*client.Game
+	UserGames  []*client.UserGame
+	Statuses   []client.Status
+	Franchises []*client.Franchise
 
 	SelectedFranchiseID string
 	Error               string
@@ -42,19 +42,21 @@ type Renderer interface {
 
 // APIClient is the interface that interacts with the API
 type APIClient interface {
-	LogoutUser(token string) error
-	DeleteUserGame(gameID, token string) error
-	GetUser(token string) (*models.User, error)
-	CreateUser(user *models.User) (*models.User, error)
-	LinkGameToUser(gameID, token string) (*models.UserGame, error)
-	LoginUser(user *models.User) (*models.UserLoginResponse, error)
-	CreateGame(game *models.Game, token string) (*models.Game, error)
-	ChangeGameStatus(gameID, token string, status models.Status) error
-	ChangeGameProgress(gameID, token string, progress *models.UserGameProgress) error
-	GetUserGames(token string) (map[models.Status][]*models.UserGame, error)
-	GetGames(token string, options *client.GetGamesOptions) ([]*models.Game, error)
-	GetFranchises(token string) ([]*models.Franchise, error)
-	CreateFranchise(req *client.CreateFranchiseRequest, token string) (*client.CreateFranchiseResponse, error)
+	GetFranchises(*client.GetFranchisesRequest) (*client.GetFranchisesResponse, error)
+	CreateFranchise(*client.CreateFranchiseRequest) (*client.CreateFranchiseResponse, error)
+
+	GetGames(*client.GetGamesRequest) (*client.GetGamesResponse, error)
+	CreateGame(*client.CreateGameRequest) (*client.CreateGameResponse, error)
+
+	GetUserGames(*client.GetUserGamesRequest) (*client.GetUserGamesResponse, error)
+	LinkGameToUser(*client.LinkGameToUserRequest) error
+	UpdateGameProgress(*client.UpdateGameProgressRequest) error
+	DeleteUserGame(*client.DeleteUserGameRequest) error
+
+	LoginUser(*client.LoginUserRequest) (*client.UserLoginResponse, error)
+	CreateUser(*client.CreateUserRequest) (*client.CreateUserResponse, error)
+	GetUser(*client.GetUserRequest) (*client.GetUserResponse, error)
+	LogoutUser(*client.LogoutUserRequest) error
 }
 
 // Server is the struct that holds all the dependencies

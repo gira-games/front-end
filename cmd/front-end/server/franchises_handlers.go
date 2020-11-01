@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/asankov/gira/pkg/client"
+	"github.com/gira-games/client/pkg/client"
 )
 
 func (s *Server) handleFranchisesAddPost() authorizedHandler {
@@ -22,7 +22,7 @@ func (s *Server) handleFranchisesAddPost() authorizedHandler {
 			return
 		}
 
-		resp, err := s.Client.CreateFranchise(&client.CreateFranchiseRequest{Name: franchiseName}, token)
+		resp, err := s.Client.CreateFranchise(&client.CreateFranchiseRequest{Name: franchiseName, Token: token})
 		if err != nil {
 			if errors.Is(err, client.ErrNoAuthorization) {
 				w.Header().Add("Location", "/users/login")
