@@ -8,14 +8,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gira-games/client/pkg/client"
+
 	"github.com/asankov/gira/internal/fixtures"
 	"github.com/asankov/gira/internal/fixtures/assert"
-	"github.com/asankov/gira/pkg/client"
-	"github.com/asankov/gira/pkg/models"
 	"github.com/golang/mock/gomock"
 )
 
-var franchise = models.Franchise{
+var franchise = client.Franchise{
 	ID:   "123",
 	Name: "Batman",
 }
@@ -29,7 +29,7 @@ func TestAddFranchise(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateFranchise(gomock.Eq(&client.CreateFranchiseRequest{Name: franchise.Name}), gomock.Eq(token)).
+		CreateFranchise(gomock.Eq(&client.CreateFranchiseRequest{Name: franchise.Name, Token: token})).
 		Return(&client.CreateFranchiseResponse{
 			Franchise: &franchise,
 		}, nil)
@@ -76,7 +76,7 @@ func TestAddFranchiseNoAuth(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateFranchise(gomock.Eq(&client.CreateFranchiseRequest{Name: franchise.Name}), gomock.Eq(token)).
+		CreateFranchise(gomock.Eq(&client.CreateFranchiseRequest{Name: franchise.Name, Token: token})).
 		Return(nil, client.ErrNoAuthorization)
 
 	w := httptest.NewRecorder()

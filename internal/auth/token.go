@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/asankov/gira/pkg/models"
+	"github.com/gira-games/client/pkg/client"
 )
 
 var (
@@ -27,13 +27,15 @@ var (
 	}
 )
 
+// TODO: use custom User object when extracting this into a separate service
+
 type header struct {
 	Algorith string `json:"alg"`
 	Type     string `json:"typ"`
 }
 
 type payload struct {
-	User      *models.User
+	User      *client.User
 	ExpiresAt int64 `json:"exp"`
 }
 
@@ -52,13 +54,13 @@ func NewAutheniticator(secret string) *Authenticator {
 
 // NewTokenForUser generates a new JWT for the given username,
 // with the default expiration of 50 minutes, signs it with a secret and returns it.
-func (a *Authenticator) NewTokenForUser(user *models.User) (string, error) {
+func (a *Authenticator) NewTokenForUser(user *client.User) (string, error) {
 	return a.NewTokenForUserWithExpiration(user, 50*time.Minute)
 }
 
 // NewTokenForUserWithExpiration generates a new JWT for the given username,
 // with expiration now + d, signs it with a secret and returns it.
-func (a *Authenticator) NewTokenForUserWithExpiration(user *models.User, d time.Duration) (string, error) {
+func (a *Authenticator) NewTokenForUserWithExpiration(user *client.User, d time.Duration) (string, error) {
 	p := &payload{
 		User:      user,
 		ExpiresAt: time.Now().Add(d).Unix(),
@@ -86,7 +88,7 @@ func (a *Authenticator) hash(src string) string {
 // the token belongs to, otherwise it returns an error.
 // If the token is expired, a ErrTokenExpired is returned.
 // If the JWT has been tampered with, a ErrInvalidSignature is returned.
-func (a *Authenticator) DecodeToken(token string) (*models.User, error) {
+func (a *Authenticator) DecodeToken(token string) (*client.User, error) {
 	components := strings.Split(token, ".")
 	if len(components) != 3 {
 		return nil, ErrInvalidFormat

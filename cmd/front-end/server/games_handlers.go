@@ -5,8 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/asankov/gira/pkg/client"
-	"github.com/asankov/gira/pkg/models"
+	"github.com/gira-games/client/pkg/client"
 )
 
 func (s *Server) handleHome() http.HandlerFunc {
@@ -23,7 +22,7 @@ func (s *Server) handleHome() http.HandlerFunc {
 func (s *Server) handleGamesAdd() authorizedHandler {
 	return func(w http.ResponseWriter, r *http.Request, token string) {
 
-		games, err := s.Client.GetGames(token, &client.GetGamesOptions{ExcludeAssigned: true})
+		games, err := s.Client.GetGames(&client.GetGamesRequest{Token: token, ExcludeAssigned: true})
 		if err != nil {
 			if errors.Is(err, client.ErrNoAuthorization) {
 				w.Header().Add("Location", "/users/login")
@@ -35,7 +34,7 @@ func (s *Server) handleGamesAdd() authorizedHandler {
 		}
 
 		s.render(w, r, TemplateData{
-			Games: games,
+			Games: games.Games,
 		}, addGamePage, token)
 	}
 }
@@ -56,7 +55,7 @@ func (s *Server) handleGamesAddPost() authorizedHandler {
 			return
 		}
 
-		if _, err := s.Client.LinkGameToUser(gameID, token); err != nil {
+		if err := s.Client.LinkGameToUser(&client.LinkGameToUserRequest{GameID: gameID, Token: token}); err != nil {
 			// TODO: if err == no auth
 			s.Log.Errorln(err)
 			// TODO: render error page
@@ -89,7 +88,13 @@ func (s *Server) handleGamesChangeStatus() authorizedHandler {
 			return
 		}
 
-		if err := s.Client.ChangeGameStatus(gameID, token, models.Status(status)); err != nil {
+		if err := s.Client.UpdateGameProgress(&client.UpdateGameProgressRequest{
+			GameID: gameID,
+			Token:  token,
+			Update: client.UpdateGameProgressChange{
+				Status: client.Status(status),
+			},
+		}); err != nil {
 			s.Log.Errorln(err)
 			// TODO: render error page
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -131,7 +136,16 @@ func (s *Server) handleGamesChangeProgress() authorizedHandler {
 			http.Error(w, "'finalProgress' should be a valid integer", http.StatusBadRequest)
 			return
 		}
-		if err := s.Client.ChangeGameProgress(gameID, token, &models.UserGameProgress{Current: currentProgress, Final: finalProgress}); err != nil {
+		if err := s.Client.UpdateGameProgress(&client.UpdateGameProgressRequest{
+			GameID: gameID,
+			Token:  token,
+			Update: client.UpdateGameProgressChange{
+				Progress: &client.UserGameProgress{
+					Current: currentProgress,
+					Final:   finalProgress,
+				},
+			},
+		}); err != nil {
 			s.Log.Errorln(err)
 			// TODO: render error page
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -146,7 +160,7 @@ func (s *Server) handleGamesChangeProgress() authorizedHandler {
 func (s *Server) handleGamesGet() authorizedHandler {
 	return func(w http.ResponseWriter, r *http.Request, token string) {
 
-		gamesResponse, err := s.Client.GetUserGames(token)
+		gamesResponse, err := s.Client.GetUserGames(&client.GetUserGamesRequest{Token: token})
 		if err != nil {
 			if errors.Is(err, client.ErrNoAuthorization) {
 				w.Header().Add("Location", "/users/login")
@@ -158,16 +172,17 @@ func (s *Server) handleGamesGet() authorizedHandler {
 		}
 
 		data := TemplateData{
-			UserGames: mapToGames(gamesResponse),
-			Statuses:  models.AllStatuses,
+			UserGames: mapToGames(gamesResponse.UserGames),
+			// TODO: get this from back-end
+			Statuses: []client.Status{client.Status("TODO"), client.Status("In progress"), client.Status("Done")},
 		}
 
 		s.render(w, r, data, listGamesPage, token)
 	}
 }
 
-func mapToGames(userGames map[models.Status][]*models.UserGame) []*models.UserGame {
-	res := []*models.UserGame{}
+func mapToGames(userGames map[client.Status][]*client.UserGame) []*client.UserGame {
+	res := []*client.UserGame{}
 	for _, v := range userGames {
 		res = append(res, v...)
 	}
@@ -177,10 +192,12 @@ func mapToGames(userGames map[models.Status][]*models.UserGame) []*models.UserGa
 func (s *Server) handleGameCreateView() authorizedHandler {
 	return func(w http.ResponseWriter, r *http.Request, token string) {
 
-		franchises, err := s.Client.GetFranchises(token)
+		franchises := []*client.Franchise{}
+		resp, err := s.Client.GetFranchises(&client.GetFranchisesRequest{Token: token})
 		if err != nil {
 			s.Log.Warnf("Error while fetching franchises: %v", err)
-			franchises = []*models.Franchise{}
+		} else {
+			franchises = resp.Franchises
 		}
 
 		selectedFranchiseIDquery, ok := r.URL.Query()["selectedFranchise"]
@@ -211,7 +228,13 @@ func (s *Server) handleGameCreate() authorizedHandler {
 
 		franchiseID := r.PostForm.Get("franchiseId")
 
-		if _, err := s.Client.CreateGame(&models.Game{Name: name, FranshiseID: franchiseID}, token); err != nil {
+		if _, err := s.Client.CreateGame(&client.CreateGameRequest{
+			Token: token,
+			Game: &client.Game{
+				Name:        name,
+				FranshiseID: franchiseID,
+			},
+		}); err != nil {
 			s.Session.Put(r, "error", err.Error())
 
 			w.Header().Add("Location", "/games/new")
@@ -240,7 +263,10 @@ func (s *Server) handleGamesDelete() authorizedHandler {
 			return
 		}
 
-		if err := s.Client.DeleteUserGame(gameID, token); err != nil {
+		if err := s.Client.DeleteUserGame(&client.DeleteUserGameRequest{
+			GameID: gameID,
+			Token:  token,
+		}); err != nil {
 			if errors.Is(err, client.ErrNoAuthorization) {
 				w.Header().Add("Location", "/users/login")
 				w.WriteHeader(http.StatusSeeOther)
@@ -268,11 +294,17 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, data TemplateDat
 	}
 
 	if token != "" {
-		usr, err := s.Client.GetUser(token)
+		resp, err := s.Client.GetUser(&client.GetUserRequest{
+			Token: token,
+		})
 		if err != nil {
 			s.Log.Errorf("Error while fetching user: %v", err)
 		} else {
-			data.User = usr
+			data.User = &client.User{
+				ID:       resp.ID,
+				Username: resp.Username,
+				Email:    resp.Email,
+			}
 		}
 	}
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gira-games/client/pkg/client"
 	"crypto/tls"
 	"flag"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/asankov/gira/cmd/front-end/server"
-	"github.com/asankov/gira/pkg/client"
 
 	"github.com/golangcollege/sessions"
 )

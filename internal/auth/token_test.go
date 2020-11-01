@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"github.com/gira-games/client/pkg/client"
 	"testing"
 	"time"
 
@@ -10,11 +11,10 @@ import (
 
 	"github.com/asankov/gira/internal/auth"
 	gassert "github.com/asankov/gira/internal/fixtures/assert"
-	"github.com/asankov/gira/pkg/models"
 )
 
 var (
-	expectedUser     = &models.User{Username: expectedUsername}
+	expectedUser     = &client.User{Username: expectedUsername}
 	expectedUsername = "username"
 
 	authenticator = auth.NewAutheniticator("secret")
@@ -51,7 +51,7 @@ func TestTokenExpired(t *testing.T) {
 
 func TestInvalidSignature(t *testing.T) {
 	newAuthenticator := auth.NewAutheniticator("some.other.secret")
-	newToken, err := newAuthenticator.NewTokenForUser(&models.User{})
+	newToken, err := newAuthenticator.NewTokenForUser(&client.User{})
 	assert.Nil(t, err)
 
 	usr, err := authenticator.DecodeToken(newToken)

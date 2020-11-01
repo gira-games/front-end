@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gira-games/client/pkg/client"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
@@ -15,7 +17,6 @@ import (
 	gassert "github.com/asankov/gira/internal/fixtures/assert"
 
 	"github.com/asankov/gira/internal/fixtures"
-	"github.com/asankov/gira/pkg/models"
 	"github.com/golang/mock/gomock"
 )
 
@@ -63,11 +64,11 @@ func TestUserLogin(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LoginUser(gomock.Eq(&models.User{
+		LoginUser(&client.LoginUserRequest{
 			Email:    email,
 			Password: password,
-		})).
-		Return(&models.UserLoginResponse{Token: token}, nil)
+		}).
+		Return(&client.UserLoginResponse{Token: token}, nil)
 
 	w := httptest.NewRecorder()
 	form := url.Values{}
@@ -96,7 +97,7 @@ func TestUserLoginFormError(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LoginUser(gomock.Eq(&models.User{
+		LoginUser(gomock.Eq(&client.LoginUserRequest{
 			Email:    email,
 			Password: password,
 		})).
@@ -135,7 +136,7 @@ func TestUserLogout(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LogoutUser(gomock.Eq(token)).
+		LogoutUser(&client.LogoutUserRequest{Token: token}).
 		Return(nil)
 
 	w := httptest.NewRecorder()
@@ -157,10 +158,10 @@ func TestUserSignup(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateUser(gomock.Eq(&models.User{
+		CreateUser(&client.CreateUserRequest{
 			Email:    email,
 			Password: password,
-		})).
+		}).
 		Return(nil, nil)
 
 	w := httptest.NewRecorder()
