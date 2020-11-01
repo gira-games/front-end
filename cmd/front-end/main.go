@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/gira-games/client/pkg/client"
 	"crypto/tls"
 	"flag"
 	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/gira-games/client/pkg/client"
 
 	"github.com/asankov/gira/cmd/front-end/templates"
 	"github.com/sirupsen/logrus"
