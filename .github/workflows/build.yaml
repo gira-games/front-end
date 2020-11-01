@@ -12,7 +12,6 @@ jobs:
     strategy:
       matrix:
         go-version: [1.15, 1.14, 1.13]
-        service: ['api', 'front-end']
 
     steps:
     - uses: actions/checkout@v1
@@ -20,6 +19,6 @@ jobs:
       uses: actions/setup-go@v1
       with:
         go-version: ${{ matrix.go-version }}
-    - name: Build ${{ matrix.service }} service
+    - name: Build Gira front-end service
       run: |
-        go build ./cmd/${{ matrix.service }}
+        go build ./cmd/front-end
