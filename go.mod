@@ -3,7 +3,7 @@ module github.com/asankov/gira
 go 1.13
 
 require (
-	github.com/gira-games/client v0.0.0-20201101143646-d5a6061b3fb7
+	github.com/gira-games/client v0.0.0-20201103174644-f91f6761e210
 	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/golang/mock v1.4.4
 	github.com/golangcollege/sessions v1.2.0

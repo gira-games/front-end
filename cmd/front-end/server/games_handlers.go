@@ -232,7 +232,7 @@ func (s *Server) handleGameCreate() authorizedHandler {
 			Token: token,
 			Game: &client.Game{
 				Name:        name,
-				FranshiseID: franchiseID,
+				FranchiseID: franchiseID,
 			},
 		}); err != nil {
 			s.Session.Put(r, "error", err.Error())
