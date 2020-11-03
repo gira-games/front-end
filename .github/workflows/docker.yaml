@@ -5,41 +5,6 @@ on:
     - main
 
 jobs:
-  docker_hub:
-    name: Build Gira front-end image and push to Docker Hub
-    runs-on: ubuntu-latest
-
-    steps:
-        - name: Checkout code
-          uses: actions/checkout@v2
-        - name: Build and push Docker images
-          uses: docker/build-push-action@v1
-          with:
-            tags: latest
-            tag_with_sha: true
-            username: ${{ secrets.DOCKER_USERNAME }}
-            password: ${{ secrets.DOCKER_PASSWORD }}
-            dockerfile: docker/Dockerfile.front-end
-            # TODO:
-            repository: asankov/gira-${{ matrix.service }}
-  quay_io:
-    name: Build Gira front-end image and push to Quay.io
-    runs-on: ubuntu-latest
-
-    steps:
-        - name: Checkout code
-          uses: actions/checkout@v2
-        - name: Build and push Docker images
-          uses: docker/build-push-action@v1
-          with:
-            tags: latest
-            registry: quay.io
-            tag_with_sha: true
-            username: ${{ secrets.QUAY_IO_USERNAME }}
-            password: ${{ secrets.QUAY_IO_PASSWORD }}
-            dockerfile: docker/Dockerfile.front-end
-            # TODO:
-            repository: asankov/gira-${{ matrix.service }}
   gh_cr:
     name: Build Gira front-end image and push to GitHub Container Registry
     runs-on: ubuntu-latest
@@ -56,5 +21,4 @@ jobs:
             username: ${{ secrets.GHCR_USERNAME }}
             password: ${{ secrets.GHCR_PASSWORD }}
             dockerfile: docker/Dockerfile.front-end
-            # TODO
-            repository: asankov/gira/gira-${{ matrix.service }}
+            repository: gira-games/front-end
