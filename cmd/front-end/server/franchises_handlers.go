@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -22,7 +23,7 @@ func (s *Server) handleFranchisesAddPost() authorizedHandler {
 			return
 		}
 
-		resp, err := s.Client.CreateFranchise(&client.CreateFranchiseRequest{Name: franchiseName, Token: token})
+		resp, err := s.Client.CreateFranchise(context.Background(), &client.CreateFranchiseRequest{Name: franchiseName, Token: token})
 		if err != nil {
 			if errors.Is(err, client.ErrNoAuthorization) {
 				w.Header().Add("Location", "/users/login")

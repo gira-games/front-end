@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"strconv"
@@ -22,7 +23,7 @@ func (s *Server) handleHome() http.HandlerFunc {
 func (s *Server) handleGamesAdd() authorizedHandler {
 	return func(w http.ResponseWriter, r *http.Request, token string) {
 
-		games, err := s.Client.GetGames(&client.GetGamesRequest{Token: token, ExcludeAssigned: true})
+		games, err := s.Client.GetGames(context.Background(), &client.GetGamesRequest{Token: token, ExcludeAssigned: true})
 		if err != nil {
 			if errors.Is(err, client.ErrNoAuthorization) {
 				w.Header().Add("Location", "/users/login")
@@ -55,7 +56,7 @@ func (s *Server) handleGamesAddPost() authorizedHandler {
 			return
 		}
 
-		if err := s.Client.LinkGameToUser(&client.LinkGameToUserRequest{GameID: gameID, Token: token}); err != nil {
+		if err := s.Client.LinkGameToUser(context.Background(), &client.LinkGameToUserRequest{GameID: gameID, Token: token}); err != nil {
 			// TODO: if err == no auth
 			s.Log.Errorln(err)
 			// TODO: render error page
@@ -88,7 +89,7 @@ func (s *Server) handleGamesChangeStatus() authorizedHandler {
 			return
 		}
 
-		if err := s.Client.UpdateGameProgress(&client.UpdateGameProgressRequest{
+		if err := s.Client.UpdateGameProgress(context.Background(), &client.UpdateGameProgressRequest{
 			GameID: gameID,
 			Token:  token,
 			Update: client.UpdateGameProgressChange{
@@ -136,7 +137,7 @@ func (s *Server) handleGamesChangeProgress() authorizedHandler {
 			http.Error(w, "'finalProgress' should be a valid integer", http.StatusBadRequest)
 			return
 		}
-		if err := s.Client.UpdateGameProgress(&client.UpdateGameProgressRequest{
+		if err := s.Client.UpdateGameProgress(context.Background(), &client.UpdateGameProgressRequest{
 			GameID: gameID,
 			Token:  token,
 			Update: client.UpdateGameProgressChange{
@@ -160,7 +161,7 @@ func (s *Server) handleGamesChangeProgress() authorizedHandler {
 func (s *Server) handleGamesGet() authorizedHandler {
 	return func(w http.ResponseWriter, r *http.Request, token string) {
 
-		gamesResponse, err := s.Client.GetUserGames(&client.GetUserGamesRequest{Token: token})
+		gamesResponse, err := s.Client.GetUserGames(context.Background(), &client.GetUserGamesRequest{Token: token})
 		if err != nil {
 			if errors.Is(err, client.ErrNoAuthorization) {
 				w.Header().Add("Location", "/users/login")
@@ -193,7 +194,7 @@ func (s *Server) handleGameCreateView() authorizedHandler {
 	return func(w http.ResponseWriter, r *http.Request, token string) {
 
 		franchises := []*client.Franchise{}
-		resp, err := s.Client.GetFranchises(&client.GetFranchisesRequest{Token: token})
+		resp, err := s.Client.GetFranchises(context.Background(), &client.GetFranchisesRequest{Token: token})
 		if err != nil {
 			s.Log.Warnf("Error while fetching franchises: %v", err)
 		} else {
@@ -228,7 +229,7 @@ func (s *Server) handleGameCreate() authorizedHandler {
 
 		franchiseID := r.PostForm.Get("franchiseId")
 
-		if _, err := s.Client.CreateGame(&client.CreateGameRequest{
+		if _, err := s.Client.CreateGame(context.Background(), &client.CreateGameRequest{
 			Token: token,
 			Game: &client.Game{
 				Name:        name,
@@ -263,7 +264,7 @@ func (s *Server) handleGamesDelete() authorizedHandler {
 			return
 		}
 
-		if err := s.Client.DeleteUserGame(&client.DeleteUserGameRequest{
+		if err := s.Client.DeleteUserGame(context.Background(), &client.DeleteUserGameRequest{
 			GameID: gameID,
 			Token:  token,
 		}); err != nil {
@@ -294,7 +295,7 @@ func (s *Server) render(w http.ResponseWriter, r *http.Request, data TemplateDat
 	}
 
 	if token != "" {
-		resp, err := s.Client.GetUser(&client.GetUserRequest{
+		resp, err := s.Client.GetUser(context.Background(), &client.GetUserRequest{
 			Token: token,
 		})
 		if err != nil {
