@@ -172,10 +172,20 @@ func (s *Server) handleGamesGet() authorizedHandler {
 			return
 		}
 
+		statusesResponse, err := s.Client.GetStatuses(context.Background(), &client.GetStatusesRequest{Token: token})
+		if err != nil {
+			if errors.Is(err, client.ErrNoAuthorization) {
+				w.Header().Add("Location", "/users/login")
+				w.WriteHeader(http.StatusSeeOther)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		data := TemplateData{
 			UserGames: mapToGames(gamesResponse.UserGames),
-			// TODO: get this from back-end
-			Statuses: []client.Status{client.Status("TODO"), client.Status("In progress"), client.Status("Done")},
+			Statuses:  statusesResponse.Statuses,
 		}
 
 		s.render(w, r, data, listGamesPage, token)

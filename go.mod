@@ -3,7 +3,7 @@ module github.com/asankov/gira
 go 1.13
 
 require (
-	github.com/gira-games/client v1.1.0
+	github.com/gira-games/client v1.2.0
 	github.com/golang/mock v1.4.4
 	github.com/golangcollege/sessions v1.2.0
 	github.com/gorilla/mux v1.7.4

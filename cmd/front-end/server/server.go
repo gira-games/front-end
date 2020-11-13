@@ -58,6 +58,8 @@ type APIClient interface {
 	CreateUser(context.Context, *client.CreateUserRequest) (*client.CreateUserResponse, error)
 	GetUser(context.Context, *client.GetUserRequest) (*client.GetUserResponse, error)
 	LogoutUser(context.Context, *client.LogoutUserRequest) error
+
+	GetStatuses(ctx context.Context, request *client.GetStatusesRequest) (*client.GetStatusesResponse, error)
 }
 
 // Server is the struct that holds all the dependencies

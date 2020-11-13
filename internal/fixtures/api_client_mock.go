@@ -123,6 +123,21 @@ func (mr *APIClientMockMockRecorder) GetGames(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGames", reflect.TypeOf((*APIClientMock)(nil).GetGames), arg0, arg1)
 }
 
+// GetStatuses mocks base method
+func (m *APIClientMock) GetStatuses(arg0 context.Context, arg1 *client.GetStatusesRequest) (*client.GetStatusesResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetStatuses", arg0, arg1)
+	ret0, _ := ret[0].(*client.GetStatusesResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetStatuses indicates an expected call of GetStatuses
+func (mr *APIClientMockMockRecorder) GetStatuses(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetStatuses", reflect.TypeOf((*APIClientMock)(nil).GetStatuses), arg0, arg1)
+}
+
 // GetUser mocks base method
 func (m *APIClientMock) GetUser(arg0 context.Context, arg1 *client.GetUserRequest) (*client.GetUserResponse, error) {
 	m.ctrl.T.Helper()
