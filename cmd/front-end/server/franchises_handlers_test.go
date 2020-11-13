@@ -29,7 +29,7 @@ func TestAddFranchise(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateFranchise(gomock.Eq(&client.CreateFranchiseRequest{Name: franchise.Name, Token: token})).
+		CreateFranchise(gomock.AssignableToTypeOf(ctxType), gomock.Eq(&client.CreateFranchiseRequest{Name: franchise.Name, Token: token})).
 		Return(&client.CreateFranchiseResponse{
 			Franchise: &franchise,
 		}, nil)
@@ -76,7 +76,7 @@ func TestAddFranchiseNoAuth(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateFranchise(gomock.Eq(&client.CreateFranchiseRequest{Name: franchise.Name, Token: token})).
+		CreateFranchise(gomock.AssignableToTypeOf(ctxType), gomock.Eq(&client.CreateFranchiseRequest{Name: franchise.Name, Token: token})).
 		Return(nil, client.ErrNoAuthorization)
 
 	w := httptest.NewRecorder()
