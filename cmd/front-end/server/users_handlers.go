@@ -33,7 +33,10 @@ func (s *Server) handleUserLogin() http.HandlerFunc {
 		})
 		if err != nil {
 			s.Log.Errorf("Error while logging in user: %v", err)
-			// TODO: return to login screen with sensible error
+			if errResponse, ok := err.(*client.ErrorResponse); ok {
+				s.render(w, r, TemplateData{Error: errResponse.Error()}, loginUserPage, "")
+				return
+			}
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
