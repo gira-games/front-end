@@ -1,11 +1,13 @@
 package server_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -31,6 +33,8 @@ var (
 		ID:       "1",
 		Username: "test-user",
 	}
+
+	ctxType = reflect.TypeOf((*context.Context)(nil)).Elem()
 )
 
 func newServer(a *fixtures.APIClientMock, r *fixtures.RendererMock) *server.Server {
@@ -81,7 +85,7 @@ func TestHandleHomeLoggedInUser(t *testing.T) {
 	})
 
 	apiClient.EXPECT().
-		GetUser(&client.GetUserRequest{
+		GetUser(gomock.AssignableToTypeOf(ctxType), &client.GetUserRequest{
 			Token: token,
 		}).
 		Return(&client.GetUserResponse{
@@ -165,14 +169,14 @@ func TestHandleCreateView(t *testing.T) {
 			})
 
 			apiClientMock.EXPECT().
-				GetUser(&client.GetUserRequest{Token: token}).
+				GetUser(gomock.AssignableToTypeOf(ctxType), &client.GetUserRequest{Token: token}).
 				Return(&client.GetUserResponse{
 					ID:       user.ID,
 					Username: user.Username,
 					Email:    user.Email,
 				}, nil)
 			apiClientMock.EXPECT().
-				GetFranchises(&client.GetFranchisesRequest{Token: token}).
+				GetFranchises(gomock.AssignableToTypeOf(ctxType), &client.GetFranchisesRequest{Token: token}).
 				Return(&client.GetFranchisesResponse{Franchises: testCase.Franchises}, testCase.FranchisesError)
 
 			rendererMock.EXPECT().
@@ -195,10 +199,10 @@ func TestGamesAdd(t *testing.T) {
 			name: "User is fetched succesfully from the API",
 			setup: func(a *fixtures.APIClientMock, r *fixtures.RendererMock) {
 				a.EXPECT().
-					GetGames(&client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
+					GetGames(gomock.AssignableToTypeOf(ctxType), &client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
 					Return(&client.GetGamesResponse{Games: games}, nil)
 				a.EXPECT().
-					GetUser(&client.GetUserRequest{Token: token}).
+					GetUser(gomock.AssignableToTypeOf(ctxType), &client.GetUserRequest{Token: token}).
 					Return(&client.GetUserResponse{
 						ID:       user.ID,
 						Username: user.Username,
@@ -213,10 +217,10 @@ func TestGamesAdd(t *testing.T) {
 			name: "User is not fetched succesfully from the API",
 			setup: func(a *fixtures.APIClientMock, r *fixtures.RendererMock) {
 				a.EXPECT().
-					GetGames(&client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
+					GetGames(gomock.AssignableToTypeOf(ctxType), &client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
 					Return(&client.GetGamesResponse{Games: games}, nil)
 				a.EXPECT().
-					GetUser(&client.GetUserRequest{Token: token}).
+					GetUser(gomock.AssignableToTypeOf(ctxType), &client.GetUserRequest{Token: token}).
 					Return(nil, errors.New("error while fetching user"))
 				r.EXPECT().
 					Render(gomock.Any(), gomock.Any(), gomock.Eq(server.TemplateData{Games: games}), gomock.Any()).
@@ -261,7 +265,7 @@ func TestGamesAddClientError(t *testing.T) {
 			name: "NoAuthorization Error",
 			setup: func(a *fixtures.APIClientMock) {
 				a.EXPECT().
-					GetGames(&client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
+					GetGames(gomock.AssignableToTypeOf(ctxType), &client.GetGamesRequest{Token: token, ExcludeAssigned: true}).
 					Return(nil, client.ErrNoAuthorization)
 			},
 
@@ -274,7 +278,7 @@ func TestGamesAddClientError(t *testing.T) {
 			name: "Other error",
 			setup: func(a *fixtures.APIClientMock) {
 				a.EXPECT().
-					GetGames(gomock.Eq(&client.GetGamesRequest{Token: token, ExcludeAssigned: true})).
+					GetGames(gomock.AssignableToTypeOf(ctxType), gomock.Eq(&client.GetGamesRequest{Token: token, ExcludeAssigned: true})).
 					Return(nil, errors.New("some other error"))
 			},
 			expectedCode:      http.StatusInternalServerError,
@@ -316,7 +320,7 @@ func TestGamesAddPost(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LinkGameToUser(&client.LinkGameToUserRequest{
+		LinkGameToUser(gomock.AssignableToTypeOf(ctxType), &client.LinkGameToUserRequest{
 			Token:  token,
 			GameID: game.ID,
 		}).
@@ -366,7 +370,7 @@ func TestGamesAddPostClientError(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LinkGameToUser(&client.LinkGameToUserRequest{
+		LinkGameToUser(gomock.AssignableToTypeOf(ctxType), &client.LinkGameToUserRequest{
 			Token:  token,
 			GameID: game.ID,
 		}).
@@ -396,7 +400,7 @@ func TestGamesChangeStatus(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		UpdateGameProgress(&client.UpdateGameProgressRequest{
+		UpdateGameProgress(gomock.AssignableToTypeOf(ctxType), &client.UpdateGameProgressRequest{
 			GameID: game.ID,
 			Token:  token,
 			Update: client.UpdateGameProgressChange{
@@ -430,7 +434,7 @@ func TestGamesChangeStatusServiceError(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		UpdateGameProgress(&client.UpdateGameProgressRequest{
+		UpdateGameProgress(gomock.AssignableToTypeOf(ctxType), &client.UpdateGameProgressRequest{
 			GameID: game.ID,
 			Token:  token,
 			Update: client.UpdateGameProgressChange{
@@ -525,7 +529,7 @@ func TestGamesChangeProgress(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		UpdateGameProgress(&client.UpdateGameProgressRequest{
+		UpdateGameProgress(gomock.AssignableToTypeOf(ctxType), &client.UpdateGameProgressRequest{
 			GameID: game.ID,
 			Token:  token,
 			Update: client.UpdateGameProgressChange{
@@ -626,7 +630,7 @@ func TestGamesCreate(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateGame(&client.CreateGameRequest{
+		CreateGame(gomock.AssignableToTypeOf(ctxType), &client.CreateGameRequest{
 			Token: token,
 			Game: &client.Game{
 				Name: game.Name,
@@ -706,7 +710,7 @@ func TestGamesCreateServiceError(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateGame(&client.CreateGameRequest{Game: &client.Game{Name: game.Name}, Token: token}).
+		CreateGame(gomock.AssignableToTypeOf(ctxType), &client.CreateGameRequest{Game: &client.Game{Name: game.Name}, Token: token}).
 		Return(nil, errors.New("error while creating game"))
 
 	w := httptest.NewRecorder()
@@ -733,14 +737,14 @@ func TestGamesGet(t *testing.T) {
 	srv := newServer(apiClientMock, rendererMock)
 
 	apiClientMock.EXPECT().
-		GetUser(&client.GetUserRequest{Token: token}).
+		GetUser(gomock.AssignableToTypeOf(ctxType), &client.GetUserRequest{Token: token}).
 		Return(&client.GetUserResponse{
 			ID:       user.ID,
 			Username: user.Username,
 			Email:    user.Email,
 		}, nil)
 	apiClientMock.EXPECT().
-		GetUserGames(&client.GetUserGamesRequest{Token: token}).
+		GetUserGames(gomock.AssignableToTypeOf(ctxType), &client.GetUserGamesRequest{Token: token}).
 		Return(&client.GetUserGamesResponse{
 			UserGames: map[client.Status][]*client.UserGame{
 				"Done": {
@@ -792,7 +796,7 @@ func TestGamesGetClientError(t *testing.T) {
 			name: "Auth error",
 			setup: func(a *fixtures.APIClientMock) {
 				a.EXPECT().
-					GetUserGames(&client.GetUserGamesRequest{Token: token}).
+					GetUserGames(gomock.AssignableToTypeOf(ctxType), &client.GetUserGamesRequest{Token: token}).
 					Return(nil, client.ErrNoAuthorization)
 			},
 
@@ -804,7 +808,7 @@ func TestGamesGetClientError(t *testing.T) {
 			name: "Other error",
 			setup: func(a *fixtures.APIClientMock) {
 				a.EXPECT().
-					GetUserGames(&client.GetUserGamesRequest{Token: token}).
+					GetUserGames(gomock.AssignableToTypeOf(ctxType), &client.GetUserGamesRequest{Token: token}).
 					Return(nil, errors.New("unknown error"))
 			},
 			assert: func(t *testing.T, w *httptest.ResponseRecorder) {
@@ -849,7 +853,7 @@ func TestGamesDelete(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		DeleteUserGame(&client.DeleteUserGameRequest{
+		DeleteUserGame(gomock.AssignableToTypeOf(ctxType), &client.DeleteUserGameRequest{
 			GameID: game.ID,
 			Token:  token,
 		}).
@@ -880,7 +884,7 @@ func TestGamesDeleteClientError(t *testing.T) {
 			name: "Auth error",
 			setup: func(a *fixtures.APIClientMock) {
 				a.EXPECT().
-					DeleteUserGame(&client.DeleteUserGameRequest{
+					DeleteUserGame(gomock.AssignableToTypeOf(ctxType), &client.DeleteUserGameRequest{
 						GameID: game.ID,
 						Token:  token,
 					}).
@@ -895,7 +899,7 @@ func TestGamesDeleteClientError(t *testing.T) {
 			name: "Other error",
 			setup: func(a *fixtures.APIClientMock) {
 				a.EXPECT().
-					DeleteUserGame(&client.DeleteUserGameRequest{
+					DeleteUserGame(gomock.AssignableToTypeOf(ctxType), &client.DeleteUserGameRequest{
 						GameID: game.ID,
 						Token:  token,
 					}).

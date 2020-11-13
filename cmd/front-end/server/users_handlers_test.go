@@ -64,7 +64,7 @@ func TestUserLogin(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LoginUser(&client.LoginUserRequest{
+		LoginUser(gomock.AssignableToTypeOf(ctxType), &client.LoginUserRequest{
 			Email:    email,
 			Password: password,
 		}).
@@ -97,7 +97,7 @@ func TestUserLoginFormError(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LoginUser(gomock.Eq(&client.LoginUserRequest{
+		LoginUser(gomock.AssignableToTypeOf(ctxType), gomock.Eq(&client.LoginUserRequest{
 			Email:    email,
 			Password: password,
 		})).
@@ -136,7 +136,7 @@ func TestUserLogout(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		LogoutUser(&client.LogoutUserRequest{Token: token}).
+		LogoutUser(gomock.AssignableToTypeOf(ctxType), &client.LogoutUserRequest{Token: token}).
 		Return(nil)
 
 	w := httptest.NewRecorder()
@@ -158,7 +158,7 @@ func TestUserSignup(t *testing.T) {
 	srv := newServer(apiClientMock, nil)
 
 	apiClientMock.EXPECT().
-		CreateUser(&client.CreateUserRequest{
+		CreateUser(gomock.AssignableToTypeOf(ctxType), &client.CreateUserRequest{
 			Email:    email,
 			Password: password,
 		}).

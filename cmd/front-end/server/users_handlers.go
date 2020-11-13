@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gira-games/client/pkg/client"
@@ -26,7 +27,7 @@ func (s *Server) handleUserLogin() http.HandlerFunc {
 		}
 
 		email, password := r.PostForm.Get("email"), r.PostForm.Get("password")
-		res, err := s.Client.LoginUser(&client.LoginUserRequest{
+		res, err := s.Client.LoginUser(context.Background(), &client.LoginUserRequest{
 			Email:    email,
 			Password: password,
 		})
@@ -49,7 +50,7 @@ func (s *Server) handleUserLogin() http.HandlerFunc {
 
 func (s *Server) handleUserLogout() authorizedHandler {
 	return func(w http.ResponseWriter, r *http.Request, token string) {
-		if err := s.Client.LogoutUser(&client.LogoutUserRequest{Token: token}); err != nil {
+		if err := s.Client.LogoutUser(context.Background(), &client.LogoutUserRequest{Token: token}); err != nil {
 			// TODO: render error page
 			s.Log.Printf("Error while logging-out user: %v", err)
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -74,7 +75,7 @@ func (s *Server) handleUserSignup() http.HandlerFunc {
 			return
 		}
 
-		if _, err := s.Client.CreateUser(&client.CreateUserRequest{
+		if _, err := s.Client.CreateUser(context.Background(), &client.CreateUserRequest{
 			Email:    email,
 			Password: password,
 		}); err != nil {

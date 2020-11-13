@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gira-games/client/pkg/client"
@@ -42,21 +43,21 @@ type Renderer interface {
 
 // APIClient is the interface that interacts with the API
 type APIClient interface {
-	GetFranchises(*client.GetFranchisesRequest) (*client.GetFranchisesResponse, error)
-	CreateFranchise(*client.CreateFranchiseRequest) (*client.CreateFranchiseResponse, error)
+	GetFranchises(context.Context, *client.GetFranchisesRequest) (*client.GetFranchisesResponse, error)
+	CreateFranchise(context.Context, *client.CreateFranchiseRequest) (*client.CreateFranchiseResponse, error)
 
-	GetGames(*client.GetGamesRequest) (*client.GetGamesResponse, error)
-	CreateGame(*client.CreateGameRequest) (*client.CreateGameResponse, error)
+	GetGames(context.Context, *client.GetGamesRequest) (*client.GetGamesResponse, error)
+	CreateGame(context.Context, *client.CreateGameRequest) (*client.CreateGameResponse, error)
 
-	GetUserGames(*client.GetUserGamesRequest) (*client.GetUserGamesResponse, error)
-	LinkGameToUser(*client.LinkGameToUserRequest) error
-	UpdateGameProgress(*client.UpdateGameProgressRequest) error
-	DeleteUserGame(*client.DeleteUserGameRequest) error
+	GetUserGames(context.Context, *client.GetUserGamesRequest) (*client.GetUserGamesResponse, error)
+	LinkGameToUser(context.Context, *client.LinkGameToUserRequest) error
+	UpdateGameProgress(context.Context, *client.UpdateGameProgressRequest) error
+	DeleteUserGame(context.Context, *client.DeleteUserGameRequest) error
 
-	LoginUser(*client.LoginUserRequest) (*client.UserLoginResponse, error)
-	CreateUser(*client.CreateUserRequest) (*client.CreateUserResponse, error)
-	GetUser(*client.GetUserRequest) (*client.GetUserResponse, error)
-	LogoutUser(*client.LogoutUserRequest) error
+	LoginUser(context.Context, *client.LoginUserRequest) (*client.UserLoginResponse, error)
+	CreateUser(context.Context, *client.CreateUserRequest) (*client.CreateUserResponse, error)
+	GetUser(context.Context, *client.GetUserRequest) (*client.GetUserResponse, error)
+	LogoutUser(context.Context, *client.LogoutUserRequest) error
 }
 
 // Server is the struct that holds all the dependencies
